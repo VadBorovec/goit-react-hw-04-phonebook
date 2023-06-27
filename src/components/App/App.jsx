@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import { useState, useEffect } from 'react';
 import shortid from 'shortid';
 import Notiflix from 'notiflix';
 
@@ -11,32 +11,21 @@ import {
   ContactStats,
 } from 'components';
 
-export class App extends Component {
-  state = {
-    contacts: [],
-    filter: '',
-  };
+const LOCAL_STORAGE_KEY = 'contacts';
 
-  componentDidMount() {
-    const contacts = localStorage.getItem('contacts');
-    const parsedContacts = JSON.parse(contacts);
+// !=====functional component
 
-    if (parsedContacts) {
-      this.setState({ contacts: parsedContacts });
-    }
-  }
+export const App = () => {
+  const [contacts, setContacts] = useState(
+    () => JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || []
+  );
+  const [filter, setFilter] = useState('');
 
-  componentDidUpdate(prevProps, prevState) {
-    const nextContacts = this.state.contacts;
-    const prevContacts = prevState.contacts;
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(contacts));
+  }, [contacts]);
 
-    if (nextContacts !== prevContacts) {
-      localStorage.setItem('contacts', JSON.stringify(nextContacts));
-    }
-  }
-
-  addContact = (name, number) => {
-    const { contacts } = this.state;
+  const addContact = (name, number) => {
     const contact = {
       id: shortid.generate(),
       name,
@@ -62,27 +51,24 @@ export class App extends Component {
       );
       return;
     } else {
-      this.setState(prevState => ({
-        contacts: [contact, ...prevState.contacts],
-      }));
+      setContacts(prevContacts => [contact, ...prevContacts]);
       Notiflix.Notify.success(
         `${contact.name} has been added to  your phonebook`
       );
     }
   };
 
-  deleteContact = contactId => {
-    this.setState(prevState => ({
-      contacts: prevState.contacts.filter(contact => contact.id !== contactId),
-    }));
+  const deleteContact = contactId => {
+    setContacts(prevContacts =>
+      prevContacts.filter(contact => contact.id !== contactId)
+    );
   };
 
-  changeFilter = e => {
-    this.setState({ filter: e.currentTarget.value });
+  const changeFilter = e => {
+    setFilter(e.currentTarget.value);
   };
 
-  getVisibleContacts = () => {
-    const { filter, contacts } = this.state;
+  const visibleContacts = () => {
     const normalizedFilter = filter.toLowerCase();
 
     return contacts.filter(contact =>
@@ -90,24 +76,122 @@ export class App extends Component {
     );
   };
 
-  render() {
-    const { contacts, filter } = this.state;
-    const totalContactCount = contacts.length;
-    const visibleContacts = this.getVisibleContacts();
+  const totalContactCount = contacts.length;
 
-    return (
-      <Container>
-        <Section title="Phonebook">
-          <ContactForm onSubmit={this.addContact} />
-          <ContactFilter value={filter} onChange={this.changeFilter} />
-          <ContactStats totalContactCount={totalContactCount} />
+  return (
+    <Container>
+      <Section title="Phonebook">
+        <ContactForm onSubmit={addContact} />
+        <ContactFilter value={filter} onChange={changeFilter} />
+        <ContactStats totalContactCount={totalContactCount} />
+        <ContactList
+          contacts={visibleContacts()}
+          onDeleteContact={deleteContact}
+        />
+      </Section>
+    </Container>
+  );
+};
 
-          <ContactList
-            contacts={visibleContacts}
-            onDeleteContact={this.deleteContact}
-          />
-        </Section>
-      </Container>
-    );
-  }
-}
+// !====class
+
+// export class App extends Component {
+//   state = {
+//     contacts: [],
+//     filter: '',
+//   };
+
+// componentDidMount() {
+//   const contacts = localStorage.getItem('contacts');
+//   const parsedContacts = JSON.parse(contacts);
+
+//   if (parsedContacts) {
+//     this.setState({ contacts: parsedContacts });
+//   }
+// }
+
+// componentDidUpdate(prevProps, prevState) {
+//   const nextContacts = this.state.contacts;
+//   const prevContacts = prevState.contacts;
+
+//   if (nextContacts !== prevContacts) {
+//     localStorage.setItem('contacts', JSON.stringify(nextContacts));
+//   }
+// }
+
+//   addContact = (name, number) => {
+//     const { contacts } = this.state;
+//     const contact = {
+//       id: shortid.generate(),
+//       name,
+//       number,
+//     };
+
+//     const existingName = contacts.find(
+//       contact => contact.name.toLowerCase() === name.toLowerCase()
+//     );
+//     const existingNumber = contacts.find(
+//       contact =>
+//         contact.number.replace(/[^\d]/g, '') === number.replace(/[^\d]/g, '')
+//     );
+
+//     if (existingName) {
+//       Notiflix.Notify.failure(
+//         `Contact with this name - ${contact.name} already exists!`
+//       );
+//       return;
+//     } else if (existingNumber) {
+//       Notiflix.Notify.failure(
+//         `Contact with this number - ${contact.number} already exists!`
+//       );
+//       return;
+//     } else {
+//       this.setState(prevState => ({
+//         contacts: [contact, ...prevState.contacts],
+//       }));
+//       Notiflix.Notify.success(
+//         `${contact.name} has been added to  your phonebook`
+//       );
+//     }
+//   };
+
+// deleteContact = contactId => {
+//   this.setState(prevState => ({
+//     contacts: prevState.contacts.filter(contact => contact.id !== contactId),
+//   }));
+// };
+
+//   changeFilter = e => {
+//     this.setState({ filter: e.currentTarget.value });
+//   };
+
+//   getVisibleContacts = () => {
+//     const { filter, contacts } = this.state;
+//     const normalizedFilter = filter.toLowerCase();
+
+//     return contacts.filter(contact =>
+//       contact.name.toLowerCase().includes(normalizedFilter)
+//     );
+//   };
+
+//   render() {
+//     const { contacts, filter } = this.state;
+//     const totalContactCount = contacts.length;
+//     const visibleContacts = this.getVisibleContacts();
+
+//     return (
+//       <Container>
+//         <Section title="Phonebook">
+//           <ContactForm onSubmit={this.addContact} />
+//           <ContactFilter value={filter} onChange={this.changeFilter} />
+//           <ContactStats totalContactCount={totalContactCount} />
+
+//           <ContactList
+//             contacts={visibleContacts}
+//             onDeleteContact={this.deleteContact}
+//           />
+//         </Section>
+//       </Container>
+//     );
+//   }
+// }
